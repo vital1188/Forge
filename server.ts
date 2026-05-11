@@ -8,6 +8,9 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Trust the proxy to get the correct host and protocol
+  app.set('trust proxy', true);
+
   app.use(express.json());
 
   // Health check/Ping
@@ -27,26 +30,64 @@ async function startServer() {
       const apiKey = process.env.EASYPOST_API_KEY;
       const subAccountId = process.env.EASYPOST_SUB_ACCOUNT_ID;
       
-      // Determine origin_host from request or environment
-      let originHost = req.get('host') || "localhost";
-      originHost = originHost.split(':')[0]; // Remove port if present
+      // Better origin_host detection:
+      // 1. Try APP_URL first (provided by platform)
+      // 2. Fall back to X-Forwarded-Host (via req.get('host'))
+      // 3. Last resort is current directory logic
+      let originHost = "";
+      const appUrl = process.env.APP_URL;
+      
+      if (appUrl) {
+        try {
+          originHost = new URL(appUrl).hostname;
+        } catch (e) {
+          originHost = appUrl.split('/')[2] || "";
+        }
+      }
+      
+      if (!originHost) {
+        originHost = req.get('host') || "localhost";
+        originHost = originHost.split(':')[0]; // Remove port
+      }
       
       console.log("[Server] Context:", { 
         hasApiKey: !!apiKey, 
         hasSubAccountId: !!subAccountId, 
-        originHost 
+        originHost,
+        headers: {
+          host: req.get('host'),
+          origin: req.get('origin'),
+          referer: req.get('referer')
+        }
       });
 
-      if (!apiKey || !subAccountId) {
-        console.error("[Server] Missing configuration (API Key or Sub-account ID)");
+      if (!apiKey || apiKey === "MY_EASYPOST_API_KEY" || apiKey === "") {
+        console.warn("[Server] EASYPOST_API_KEY is not configured.");
         return res.status(200).json({ 
           success: false, 
-          error: { message: "EasyPost credentials are not fully configured. Please add EASYPOST_API_KEY and EASYPOST_SUB_ACCOUNT_ID to your secrets." } 
+          error: { message: "EasyPost API Key is missing. Please add your Production API Key (EZPT...) to the Secrets panel." } 
         });
       }
 
       if (apiKey.startsWith('EZTK')) {
-        console.warn("[Server] Test API Key detected. EasyPost requires a Production Key for Embeddables.");
+        console.warn("[Server] Test API Key detected.");
+        return res.status(200).json({
+          success: false,
+          error: { message: "EasyPost Embeddable Components require a Production API Key (starting with EZPT). Test Keys (starting with EZTK) are not supported for this feature." }
+        });
+      }
+
+      if (!apiKey.startsWith('EZPT')) {
+        console.warn("[Server] Key format doesn't match standard EZPT prefix.");
+        // We still attempt to allow it just in case of alternative formats, but keep the warning in logs
+      }
+
+      if (!subAccountId || subAccountId === "MY_SUB_ACCOUNT_ID" || subAccountId === "") {
+        console.warn("[Server] EASYPOST_SUB_ACCOUNT_ID is not configured.");
+        return res.status(200).json({ 
+          success: false, 
+          error: { message: "EasyPost Sub-account ID is missing. Please add a valid user_... ID to your secrets." } 
+        });
       }
 
       console.log("[Server] Calling EasyPost API...");

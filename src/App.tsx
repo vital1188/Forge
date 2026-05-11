@@ -235,28 +235,26 @@ export default function App() {
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-lg flex items-center gap-3 text-sm shadow-sm"
+              className="bg-amber-50 border border-amber-200 text-amber-900 p-6 rounded-xl flex flex-col md:flex-row items-start md:items-center gap-4 shadow-sm"
             >
-              <AlertCircle size={20} className="shrink-0" />
+              <div className="p-3 bg-amber-100 rounded-lg text-amber-600">
+                <AlertCircle size={24} />
+              </div>
               <div className="flex-1">
-                <p className="font-semibold">Configuration Required</p>
-                <p className="opacity-90">{error}</p>
-                {error.toLowerCase().includes("production") && (
-                  <p className="mt-2 text-[11px] bg-red-100 p-1.5 rounded inline-block font-mono">
-                    TIP: EasyPost Forge components require a Production Key (EZPT...), not a Test Key (EZTK...).
-                  </p>
-                )}
-                {error.toLowerCase().includes("user_id") && (
-                  <p className="mt-2 text-[11px] bg-red-100 p-1.5 rounded inline-block font-mono">
-                    TIP: Ensure EASYPOST_SUB_ACCOUNT_ID is a valid sub-account ID (user_...) and belongs to the account owned by your API Key.
-                  </p>
-                )}
+                <h3 className="font-display font-semibold text-lg">Action Required: Configuration Found</h3>
+                <p className="text-sm opacity-90 mt-1">{error}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="text-[10px] bg-white/50 px-2 py-1 rounded border border-amber-200 font-mono">1. Open Settings (top right)</div>
+                  <div className="text-[10px] bg-white/50 px-2 py-1 rounded border border-amber-200 font-mono">2. Navigate to Secrets</div>
+                  <div className="text-[10px] bg-white/50 px-2 py-1 rounded border border-amber-200 font-mono">3. Add EASYPOST_API_KEY (EZPT...)</div>
+                  <div className="text-[10px] bg-white/50 px-2 py-1 rounded border border-amber-200 font-mono">4. Add EASYPOST_SUB_ACCOUNT_ID (user_...)</div>
+                </div>
               </div>
               <button 
                 onClick={() => setError(null)}
-                className="text-xs hover:underline uppercase tracking-wider font-bold"
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition-colors uppercase tracking-wider md:ml-auto"
               >
-                Dismiss
+                Got it
               </button>
             </motion.div>
           )}
